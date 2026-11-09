@@ -242,7 +242,13 @@ a {
   border-radius: 999px;
   border: 1px solid var(--line);
   transition: all 0.25s ease;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.btn svg {
+  flex-shrink: 0;
 }
 .btn-solid {
   background: var(--ink);

@@ -431,6 +431,237 @@ const paintFace = (canvas, image, color, fit) => {
   if (image) drawFitted(ctx, image, canvas.width, canvas.height, fit);
 };
 
+const QR_ROWS = [
+  "1111111010100010101111111",
+  "1000001000011110001000001",
+  "1011101011011110101011101",
+  "1011101001010110001011101",
+  "1011101000111010001011101",
+  "1000001011001010101000001",
+  "1111111010101010101111111",
+  "0000000000101010100000000",
+  "1010001101001001100100101",
+  "0111100011001111101101011",
+  "1011001110001111000111101",
+  "0111000111010011111101000",
+  "1010101001110011001100001",
+  "0110100010100101101100011",
+  "1101101011110001100001101",
+  "0010010100000001110111000",
+  "1111001101111000111110010",
+  "0000000011001100100010001",
+  "1111111010001110101010001",
+  "1000001000011011100010000",
+  "1011101000101001111110010",
+  "1011101001100001010010110",
+  "1011101010010101010111011",
+  "1000001000011000100110000",
+  "1111111011101010101001001"
+];
+
+const paintBackAccessPass = canvas => {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // 1. Deep navy radial background
+  const grad = ctx.createRadialGradient(w / 2, h * 0.4, 100, w / 2, h * 0.4, w * 0.75);
+  grad.addColorStop(0, '#141838');
+  grad.addColorStop(0.65, '#090c1e');
+  grad.addColorStop(1, '#050711');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // 2. Subtle dot grid
+  ctx.fillStyle = 'rgba(232, 193, 90, 0.08)';
+  for (let x = 60; x <= w - 60; x += 40) {
+    for (let y = 60; y <= h - 60; y += 40) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // 3. Tech outer borders
+  ctx.strokeStyle = 'rgba(232, 193, 90, 0.35)';
+  ctx.lineWidth = 3;
+  ctx.strokeRect(30, 30, w - 60, h - 60);
+
+  ctx.strokeStyle = 'rgba(237, 234, 226, 0.1)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(42, 42, w - 84, h - 84);
+
+  // 4. Header Badging
+  ctx.fillStyle = '#e8c15a';
+  ctx.font = 'bold 22px "Space Grotesk", "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ACCESS PASS // SEC-ID: #2026-BJR-001', w / 2, 115);
+
+  ctx.fillStyle = '#9aa0ae';
+  ctx.font = '14px "JetBrains Mono", monospace';
+  ctx.fillText('PORTFOLIO CLEARANCE: LEVEL 5 // FULL-STACK', w / 2, 150);
+
+  ctx.strokeStyle = 'rgba(232, 193, 90, 0.3)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(120, 180);
+  ctx.lineTo(w - 120, 180);
+  ctx.stroke();
+
+  // 5. QR Code Card (High Contrast White)
+  const qrCardSize = 480;
+  const qrCardX = (w - qrCardSize) / 2;
+  const qrCardY = 230;
+
+  // Corner brackets
+  ctx.strokeStyle = '#e8c15a';
+  ctx.lineWidth = 4;
+  const bLen = 30;
+  const bPad = 15;
+  // Top-left
+  ctx.beginPath();
+  ctx.moveTo(qrCardX - bPad, qrCardY - bPad + bLen);
+  ctx.lineTo(qrCardX - bPad, qrCardY - bPad);
+  ctx.lineTo(qrCardX - bPad + bLen, qrCardY - bPad);
+  ctx.stroke();
+  // Top-right
+  ctx.beginPath();
+  ctx.moveTo(qrCardX + qrCardSize + bPad - bLen, qrCardY - bPad);
+  ctx.lineTo(qrCardX + qrCardSize + bPad, qrCardY - bPad);
+  ctx.lineTo(qrCardX + qrCardSize + bPad, qrCardY - bPad + bLen);
+  ctx.stroke();
+  // Bottom-left
+  ctx.beginPath();
+  ctx.moveTo(qrCardX - bPad, qrCardY + qrCardSize + bPad - bLen);
+  ctx.lineTo(qrCardX - bPad, qrCardY + qrCardSize + bPad);
+  ctx.lineTo(qrCardX - bPad + bLen, qrCardY + qrCardSize + bPad);
+  ctx.stroke();
+  // Bottom-right
+  ctx.beginPath();
+  ctx.moveTo(qrCardX + qrCardSize + bPad - bLen, qrCardY + qrCardSize + bPad);
+  ctx.lineTo(qrCardX + qrCardSize + bPad, qrCardY + qrCardSize + bPad);
+  ctx.lineTo(qrCardX + qrCardSize + bPad, qrCardY + qrCardSize + bPad - bLen);
+  ctx.stroke();
+
+  // White base card
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(qrCardX, qrCardY, qrCardSize, qrCardSize);
+  ctx.strokeStyle = '#e8c15a';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(qrCardX, qrCardY, qrCardSize, qrCardSize);
+
+  // Render QR Modules with official 4-module quiet zone
+  const marginModules = 4;
+  const totalModules = 25 + marginModules * 2; // 33 modules
+  const moduleSize = Math.floor(qrCardSize / totalModules); // 14px per module
+  const qrOffset = Math.round((qrCardSize - totalModules * moduleSize) / 2);
+
+  ctx.fillStyle = '#0a0a0e';
+  for (let r = 0; r < 25; r++) {
+    const row = QR_ROWS[r];
+    for (let c = 0; c < 25; c++) {
+      if (row[c] === '1') {
+        ctx.fillRect(
+          qrCardX + qrOffset + (c + marginModules) * moduleSize,
+          qrCardY + qrOffset + (r + marginModules) * moduleSize,
+          moduleSize,
+          moduleSize
+        );
+      }
+    }
+  }
+
+  // 6. Scan CTA
+  ctx.fillStyle = '#edeae2';
+  ctx.font = 'bold 30px "Space Grotesk", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SCAN TO VISIT PORTFOLIO', w / 2, 755);
+
+  ctx.fillStyle = '#e8c15a';
+  ctx.font = 'bold 18px "JetBrains Mono", monospace';
+  ctx.fillText('HTTPS://DOMAINWEB.MY.ID/', w / 2, 795);
+
+  // 7. Tech Info Card Box
+  const infoX = 110;
+  const infoY = 845;
+  const infoW = w - 220;
+  const infoH = 210;
+
+  ctx.fillStyle = '#0c0f24';
+  ctx.fillRect(infoX, infoY, infoW, infoH);
+  ctx.strokeStyle = 'rgba(237, 234, 226, 0.15)';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(infoX, infoY, infoW, infoH);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#9aa0ae';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('HOLDER', infoX + 35, infoY + 45);
+
+  ctx.fillStyle = '#edeae2';
+  ctx.font = 'bold 22px "Space Grotesk", sans-serif';
+  ctx.fillText('MUHAMMAD OKTA MAULANA', infoX + 35, infoY + 80);
+
+  ctx.fillStyle = '#e8c15a';
+  ctx.font = '14px "JetBrains Mono", monospace';
+  ctx.fillText('BOTAN // UNISKA BANJARBARU', infoX + 35, infoY + 110);
+
+  ctx.fillStyle = '#9aa0ae';
+  ctx.font = '12px "JetBrains Mono", monospace';
+  ctx.fillText('STATUS', infoX + infoW - 270, infoY + 45);
+
+  ctx.fillStyle = '#4ade80';
+  ctx.font = 'bold 18px "JetBrains Mono", monospace';
+  ctx.fillText('● ACTIVE / AUTHORIZED', infoX + infoW - 270, infoY + 80);
+
+  ctx.fillStyle = '#9aa0ae';
+  ctx.font = '13px "JetBrains Mono", monospace';
+  ctx.fillText('VALID: 2026 — INDEFINITE', infoX + infoW - 270, infoY + 110);
+
+  ctx.strokeStyle = 'rgba(237, 234, 226, 0.1)';
+  ctx.beginPath();
+  ctx.moveTo(infoX + 25, infoY + 135);
+  ctx.lineTo(infoX + infoW - 25, infoY + 135);
+  ctx.stroke();
+
+  ctx.fillStyle = '#9aa0ae';
+  ctx.font = '13px "JetBrains Mono", monospace';
+  ctx.fillText('STACK: PHP · KOTLIN · JAVA · PYTHON · REACT · MYSQL', infoX + 35, infoY + 175);
+
+  // 8. Barcode
+  const barcodePattern = [
+    3, 1, 1, 3, 2, 1, 4, 1, 2, 2, 1, 3, 1, 4, 2, 1, 1, 2, 3, 1, 2, 4, 1, 1, 3, 2, 1,
+    2, 3, 1, 4, 1, 1, 2, 2, 3, 1, 1, 4, 2, 1, 3, 1, 2, 4, 1, 2, 1, 3, 2, 1, 1, 3, 4,
+    1, 2, 2, 1, 3, 1, 4, 2, 1, 2, 3, 1, 1, 4, 2, 1, 3, 2, 1, 2, 4, 1, 1, 3, 2, 1, 4
+  ];
+  let barX = 170;
+  const barY = 1100;
+  const barH = 70;
+  ctx.fillStyle = '#edeae2';
+  for (let i = 0; i < barcodePattern.length; i++) {
+    const bw = barcodePattern[i] * 3.6;
+    if (i % 2 === 0) {
+      ctx.fillRect(barX, barY, bw, barH);
+    }
+    barX += bw + 2;
+  }
+
+  ctx.fillStyle = '#9aa0ae';
+  ctx.font = '14px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('* 2 0 2 6 - B O T A N - P A S S - S E C *', w / 2, 1205);
+
+  // 9. Bottom Gold Bar matching front
+  ctx.fillStyle = '#e8c15a';
+  ctx.fillRect(0, h - 110, w, 110);
+
+  ctx.fillStyle = '#0a0a0e';
+  ctx.font = 'bold 18px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('ACCESS GRANTED // AUTHORIZED PERSONNEL', w / 2, h - 48);
+};
+
 const paintStrap = (canvas, image, color) => {
   const across = 192;
   const along = image ? Math.max(64, Math.round((image.width / image.height) * across)) : across * 2;
@@ -896,7 +1127,7 @@ const Lanyard = ({
         backTexture.dispose();
       }
       paintFace(frontCanvas, images.front, color, s.imageFit);
-      paintFace(backCanvas, images.back || images.front, color, s.imageFit);
+      paintBackAccessPass(backCanvas);
       frontTexture.needsUpdate = true;
       backTexture.needsUpdate = true;
       start();
