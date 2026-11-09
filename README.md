@@ -45,3 +45,7 @@ React 18 + Vite, Three.js (Lanyard & Infinite Menu ditulis murni dengan Three.js
 - Kartu lanyard bisa **ditarik & diayun** pakai mouse — coba di hero.
 - Infinite Menu di bagian Works bisa di-drag memutar; klik kartu yang di tengah buat membuka link proyek.
 - Jam di pojok kanan atas adalah jam live WITA (Asia/Makassar).
+
+## Deployment
+
+Situs ini di-deploy otomatis ke Cloudflare Workers (**botann-tech**) pada setiap push ke branch `main` — build dengan `npm run build`, lalu deploy dengan `npx wrangler deploy`. Konfigurasi ada di `wrangler.toml`.
