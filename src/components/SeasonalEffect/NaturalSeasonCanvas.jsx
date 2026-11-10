@@ -15,18 +15,17 @@ function createSeasonSprites(season) {
   };
 
   if (season === 'winter') {
-    // Cinematic snow: Mix of soft glowing snow flurries + 6-arm dendrite snowflakes
+    // Cinematic snow: soft glowing snow flurries + delicate 6-arm ice crystals
     const sprites = [];
 
-    // 1. Soft glowing snow orbs (varying sizes)
-    const orbSizes = [6, 10, 14];
-    orbSizes.forEach((r) => {
+    // 1. Soft glowing circular snowflakes (various radii)
+    [6, 10, 14].forEach((r) => {
       sprites.push(
         makeCanvas((ctx) => {
           const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
           grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
           grad.addColorStop(0.4, 'rgba(240, 248, 255, 0.85)');
-          grad.addColorStop(1, 'rgba(210, 235, 255, 0)');
+          grad.addColorStop(1, 'rgba(215, 238, 255, 0)');
           ctx.fillStyle = grad;
           ctx.beginPath();
           ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -35,16 +34,15 @@ function createSeasonSprites(season) {
       );
     });
 
-    // 2. Intricate 6-arm dendritic ice crystal
-    const flakeColors = ['#ffffff', '#f0f8ff'];
-    flakeColors.forEach((color) => {
+    // 2. Delicate 6-arm dendritic crystal
+    ['#ffffff', '#f0f8ff'].forEach((color) => {
       sprites.push(
         makeCanvas((ctx) => {
           ctx.strokeStyle = color;
           ctx.fillStyle = color;
-          ctx.shadowColor = 'rgba(180, 220, 255, 0.7)';
-          ctx.shadowBlur = 6;
-          ctx.lineWidth = 1.8;
+          ctx.shadowColor = 'rgba(180, 220, 255, 0.65)';
+          ctx.shadowBlur = 5;
+          ctx.lineWidth = 1.6;
           ctx.lineCap = 'round';
 
           for (let i = 0; i < 6; i++) {
@@ -52,21 +50,21 @@ function createSeasonSprites(season) {
             ctx.rotate((i * Math.PI) / 3);
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.lineTo(0, -22);
-            ctx.moveTo(0, -9);
-            ctx.lineTo(7, -15);
-            ctx.moveTo(0, -9);
-            ctx.lineTo(-7, -15);
-            ctx.moveTo(0, -16);
-            ctx.lineTo(5, -20);
-            ctx.moveTo(0, -16);
-            ctx.lineTo(-5, -20);
+            ctx.lineTo(0, -20);
+            ctx.moveTo(0, -8);
+            ctx.lineTo(6, -14);
+            ctx.moveTo(0, -8);
+            ctx.lineTo(-6, -14);
+            ctx.moveTo(0, -15);
+            ctx.lineTo(4, -18);
+            ctx.moveTo(0, -15);
+            ctx.lineTo(-4, -18);
             ctx.stroke();
             ctx.restore();
           }
 
           ctx.beginPath();
-          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
           ctx.fill();
         })
       );
@@ -76,7 +74,7 @@ function createSeasonSprites(season) {
   }
 
   if (season === 'spring') {
-    // Delicate sakura cherry blossom petals
+    // Sakura cherry blossom petals
     const sakuraColors = ['#ffb7c5', '#ffaec0', '#ffd1dc', '#f472b6'];
     return sakuraColors.map((color) =>
       makeCanvas((ctx) => {
@@ -103,7 +101,7 @@ function createSeasonSprites(season) {
   }
 
   if (season === 'summer') {
-    // Warm glowing fireflies / sun dust
+    // Warm fireflies / golden sun motes
     const summerColors = ['#ffd700', '#f59e0b', '#fbbf24', '#fef08a'];
     return summerColors.map((color) =>
       makeCanvas((ctx) => {
@@ -241,46 +239,49 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
 
     const sprites = createSeasonSprites(season);
 
-    // Target ledges for resting leaves / snow blankets
+    // Physical landing ledges. Inset is calibrated so snow/leaves conform to pill curves!
     const TARGET_SPECS = [
-      { selector: '.hero-cta .btn-solid', maxLanded: 4, yOffset: -5, inset: 12, maxDepth: 9 },
-      { selector: '.hero-cta .btn-ghost', maxLanded: 4, yOffset: -5, inset: 12, maxDepth: 9 },
-      { selector: '.hero-meta div:nth-child(1)', maxLanded: 2, yOffset: -3, inset: 6, maxDepth: 6 },
-      { selector: '.hero-meta div:nth-child(2)', maxLanded: 2, yOffset: -3, inset: 6, maxDepth: 6 },
-      { selector: '.hero-meta div:nth-child(3)', maxLanded: 2, yOffset: -3, inset: 6, maxDepth: 6 },
-      { selector: '.season-badge', maxLanded: 1, yOffset: -4, inset: 8, maxDepth: 6 },
-      { selector: '.bgm-btn', maxLanded: 1, yOffset: -4, inset: 8, maxDepth: 6 },
-      { selector: '.marquee', maxLanded: 6, yOffset: -4, inset: 20, maxDepth: 8 }
+      { selector: '.hero-cta .btn-solid', maxLanded: 4, yOffset: -5, inset: 22, maxDepth: 8 },
+      { selector: '.hero-cta .btn-ghost', maxLanded: 4, yOffset: -5, inset: 22, maxDepth: 8 },
+      { selector: '.season-badge', maxLanded: 1, yOffset: -4, inset: 16, maxDepth: 6 },
+      { selector: '.bgm-btn', maxLanded: 1, yOffset: -4, inset: 16, maxDepth: 6 },
+      { selector: '.marquee', maxLanded: 6, yOffset: -4, inset: 10, maxDepth: 7 }
     ];
 
     const targets = TARGET_SPECS.map((spec) => {
-      // Initialize pillowy snow depths for Winter
-      const initialSegs = 16;
-      const snowDepths = [];
-      for (let i = 0; i <= initialSegs; i++) {
-        // Natural undulating pillowy snow drift curve
-        const curve = 0.75 + 0.25 * Math.sin((i / initialSegs) * Math.PI * 3.5);
-        snowDepths.push(spec.maxDepth * curve);
+      const segCount = 14;
+      // Start with 0 snow: snow accumulation is 100% created by the falling snow!
+      const snowDepths = new Array(segCount + 1).fill(0);
+      const maxDepths = new Array(segCount + 1).fill(0);
+
+      for (let i = 0; i <= segCount; i++) {
+        // Natural pill dome: depth curves smoothly down to 0 at the left & right ends
+        const domeRatio = Math.sin((i / segCount) * Math.PI);
+        const wave = 0.85 + 0.15 * Math.sin(i * 1.6);
+        maxDepths[i] = spec.maxDepth * domeRatio * wave;
       }
+
       return {
         ...spec,
         el: null,
         rect: null,
         count: 0,
-        snowDepths
+        snowDepths,
+        maxDepths
       };
     });
 
     // Constant flow of falling particles in the sky that NEVER stops
-    const DESIRED_FALLING_COUNT = season === 'winter' ? 70 : (season === 'autumn' ? 55 : 45);
+    const DESIRED_FALLING_COUNT = season === 'winter' ? 85 : (season === 'autumn' ? 55 : 45);
     const particles = [];
 
     const spawnParticle = (startY = -45) => {
       let scale;
       let baseVy;
       if (season === 'winter') {
-        scale = 0.22 + Math.random() * 0.28;
-        baseVy = 38 + Math.random() * 36;
+        // Delicate, realistic snowflakes (mostly 4-8px soft flakes, occasional 14px crystal)
+        scale = 0.12 + Math.random() * 0.16;
+        baseVy = 35 + Math.random() * 35;
       } else if (season === 'spring') {
         scale = 0.24 + Math.random() * 0.18;
         baseVy = 34 + Math.random() * 34;
@@ -304,9 +305,9 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         spin: (Math.random() - 0.5) * 1.5,
         swayPhase: Math.random() * Math.PI * 2,
         swaySpeed: 1.2 + Math.random() * 1.8,
-        swayAmp: season === 'winter' ? 14 + Math.random() * 18 : 25 + Math.random() * 30,
+        swayAmp: season === 'winter' ? 12 + Math.random() * 16 : 25 + Math.random() * 30,
         flipPhase: Math.random() * Math.PI * 2,
-        flipSpeed: season === 'winter' ? 0.8 : 1.5 + Math.random() * 2.2,
+        flipSpeed: season === 'winter' ? 0.6 : 1.5 + Math.random() * 2.2,
         sprite: sprites[Math.floor(Math.random() * sprites.length)],
         state: 'falling', // 'falling' | 'landed'
         targetObj: null,
@@ -373,59 +374,54 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         }
         if (t.el) {
           t.rect = t.el.getBoundingClientRect();
-          // Resize snow depths array if element width changes
-          const neededSegs = Math.max(8, Math.round(t.rect.width / 12));
-          if (t.snowDepths.length !== neededSegs + 1) {
-            const newDepths = [];
-            for (let i = 0; i <= neededSegs; i++) {
-              const curve = 0.75 + 0.25 * Math.sin((i / neededSegs) * Math.PI * 3.5);
-              newDepths.push(t.maxDepth * curve);
-            }
-            t.snowDepths = newDepths;
-          }
         } else {
           t.rect = null;
         }
       }
 
-      // ==========================================
-      // WINTER: Pillowy Snow Cap & Cursor Brush-off
-      // ==========================================
+      // ========================================================
+      // WINTER: Pillowy Snow Cap, Cursor Carve & Brush-off
+      // ========================================================
       if (season === 'winter') {
         for (const t of targets) {
           if (!t.rect || !t.snowDepths) continue;
           const rect = t.rect;
           if (rect.bottom < 0 || rect.top > height) continue;
 
+          const sLeft = rect.left + t.inset;
+          const sRight = rect.right - t.inset;
+          const sWidth = sRight - sLeft;
+          if (sWidth <= 10) continue;
+
           const N = t.snowDepths.length - 1;
 
           // Check cursor brushing across the snow blanket
           const isCursorNearLedge =
-            mouseX >= rect.left - 16 &&
-            mouseX <= rect.right + 16 &&
-            mouseY >= rect.top - 20 &&
-            mouseY <= rect.bottom + 8;
+            mouseX >= sLeft - 12 &&
+            mouseX <= sRight + 12 &&
+            mouseY >= rect.top - 18 &&
+            mouseY <= rect.bottom + 6;
 
           if (isCursorNearLedge) {
             for (let i = 0; i <= N; i++) {
-              const sx = rect.left + (i / N) * rect.width;
+              const sx = sLeft + (i / N) * sWidth;
               const distToMouse = Math.abs(sx - mouseX);
-              if (distToMouse < 26 && t.snowDepths[i] > 1.2) {
-                // Dislodge snow into falling flurry particles
-                if (Math.random() < 0.5) {
-                  const pushX = (mouseVx || (Math.random() - 0.5) * 20) * 0.45;
+              if (distToMouse < 22 && t.snowDepths[i] > 0.4) {
+                // Spawn falling snow flurries from brushed snow
+                if (Math.random() < 0.55) {
+                  const pushX = (mouseVx || (Math.random() - 0.5) * 16) * 0.45;
                   particles.push({
-                    x: sx + (Math.random() - 0.5) * 8,
-                    y: rect.top - t.snowDepths[i] + Math.random() * 4,
-                    scale: 0.16 + Math.random() * 0.14,
+                    x: sx + (Math.random() - 0.5) * 6,
+                    y: rect.top - t.snowDepths[i] + Math.random() * 3,
+                    scale: 0.10 + Math.random() * 0.12,
                     baseVy: 38 + Math.random() * 32,
-                    vy: -15 - Math.random() * 22, // Upward puff
-                    vx: pushX + (Math.random() - 0.5) * 16,
+                    vy: -14 - Math.random() * 20, // Gentle upward puff
+                    vx: pushX + (Math.random() - 0.5) * 14,
                     angle: Math.random() * Math.PI * 2,
                     spin: (Math.random() - 0.5) * 2.5,
                     swayPhase: Math.random() * Math.PI * 2,
                     swaySpeed: 2.2,
-                    swayAmp: 16,
+                    swayAmp: 14,
                     flipPhase: 0,
                     flipSpeed: 0,
                     sprite: sprites[0],
@@ -442,52 +438,45 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
             }
           }
 
-          // Gentle re-accumulation of snow depth from continuous falling snowfall
-          for (let i = 0; i <= N; i++) {
-            if (t.snowDepths[i] < t.maxDepth) {
-              t.snowDepths[i] = Math.min(t.maxDepth, t.snowDepths[i] + dt * 0.65);
-            }
-          }
-
           // Check if any snow is present to draw
           let hasSnow = false;
           for (let i = 0; i <= N; i++) {
-            if (t.snowDepths[i] > 0.8) {
+            if (t.snowDepths[i] > 0.4) {
               hasSnow = true;
               break;
             }
           }
 
           if (hasSnow) {
-            // Draw fluffy, pillowy white snow cap
+            // Draw pillowy snow blanket that curves perfectly into the button surface
             ctx.save();
             ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(175, 215, 255, 0.7)';
-            ctx.shadowBlur = 6;
-            ctx.shadowOffsetY = -1;
+            ctx.shadowColor = 'rgba(180, 220, 255, 0.75)';
+            ctx.shadowBlur = 5;
 
             ctx.beginPath();
-            // Bottom baseline anchored to element top edge
-            ctx.moveTo(rect.left, rect.top + 2);
-            ctx.lineTo(rect.right, rect.top + 2);
+            // Start at left endpoint (depth is 0, perfectly meets button top rim)
+            ctx.moveTo(sLeft, rect.top);
+            // Straight baseline along top edge of button
+            ctx.lineTo(sRight, rect.top);
 
-            // Pillowy top contour connecting snow depth points
-            ctx.lineTo(rect.right, rect.top - t.snowDepths[N]);
+            // Connect smoothly along snow depths from right to left
+            ctx.lineTo(sRight, rect.top - t.snowDepths[N]);
             for (let i = N - 1; i >= 0; i--) {
-              const currX = rect.left + (i / N) * rect.width;
-              const nextX = rect.left + ((i + 1) / N) * rect.width;
+              const currX = sLeft + (i / N) * sWidth;
+              const nextX = sLeft + ((i + 1) / N) * sWidth;
               const currY = rect.top - t.snowDepths[i];
               const nextY = rect.top - t.snowDepths[i + 1];
               const midX = (currX + nextX) / 2;
-              const midY = Math.min(currY, nextY) - 1.2; // Rounded humps
+              const midY = (currY + nextY) / 2 - 0.6; // Gentle rounded pillowy crest
               ctx.quadraticCurveTo(midX, midY, currX, currY);
             }
             ctx.closePath();
             ctx.fill();
 
-            // Soft white/icy rim stroke for dimension
-            ctx.strokeStyle = 'rgba(240, 248, 255, 0.85)';
-            ctx.lineWidth = 1;
+            // Subtle soft white/ice highlight
+            ctx.strokeStyle = 'rgba(235, 246, 255, 0.9)';
+            ctx.lineWidth = 0.9;
             ctx.stroke();
 
             ctx.restore();
@@ -502,7 +491,7 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
       }
 
       // Replenish the sky whenever particles land or leave, so snowfall NEVER stops
-      while (activeFalling < DESIRED_FALLING_COUNT && particles.length < DESIRED_FALLING_COUNT + 35) {
+      while (activeFalling < DESIRED_FALLING_COUNT && particles.length < DESIRED_FALLING_COUNT + 40) {
         particles.push(spawnParticle(-45));
         activeFalling++;
       }
@@ -511,7 +500,54 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         const p = particles[i];
 
         if (p.state === 'falling') {
-          // In Autumn & Spring: check organic landing on buttons/ledges
+          // ========================================================
+          // WINTER: Snowflakes hit the button and ACCUMULATE snow!
+          // ========================================================
+          if (season === 'winter' && !p.hasBeenKnocked && p.vy > 0) {
+            let absorbed = false;
+            for (const t of targets) {
+              if (!t.rect || !t.snowDepths) continue;
+              const rect = t.rect;
+              if (rect.bottom < 0 || rect.top > height) continue;
+
+              const sLeft = rect.left + t.inset;
+              const sRight = rect.right - t.inset;
+              const sWidth = sRight - sLeft;
+
+              if (p.x >= sLeft && p.x <= sRight) {
+                const prevY = p.y - p.vy * dt;
+                // Check collision with the snow rim:
+                const crossesRim = prevY <= rect.top + 6 && p.y >= rect.top - 8;
+
+                if (crossesRim) {
+                  const ratio = (p.x - sLeft) / sWidth;
+                  const N = t.snowDepths.length - 1;
+                  const idx = Math.max(1, Math.min(N - 1, Math.round(ratio * N)));
+
+                  // Snowflake physically lands and accumulates into the snow blanket!
+                  if (t.snowDepths[idx] < t.maxDepths[idx]) {
+                    t.snowDepths[idx] = Math.min(t.maxDepths[idx], t.snowDepths[idx] + 1.3);
+                    if (idx > 1) {
+                      t.snowDepths[idx - 1] = Math.min(t.maxDepths[idx - 1], t.snowDepths[idx - 1] + 0.6);
+                    }
+                    if (idx < N - 1) {
+                      t.snowDepths[idx + 1] = Math.min(t.maxDepths[idx + 1], t.snowDepths[idx + 1] + 0.6);
+                    }
+                  }
+
+                  // Flake merges into the snow, and a fresh flake spawns from the sky
+                  particles[i] = spawnParticle(-45);
+                  absorbed = true;
+                  break;
+                }
+              }
+            }
+            if (absorbed) continue;
+          }
+
+          // ========================================================
+          // AUTUMN & SPRING: Leaves/Petals landing on buttons
+          // ========================================================
           if (season !== 'winter' && !p.hasBeenKnocked && p.vy > 0) {
             for (const t of targets) {
               if (t.count >= t.maxLanded || !t.rect) continue;
@@ -561,8 +597,8 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
             const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
             if (mdist < 70 && mdist > 0) {
               const push = (70 - mdist) / 70;
-              p.vx += (mdx / mdist) * push * 30 + mouseVx * push * 0.25;
-              p.vy += (mdy / mdist) * push * 20;
+              p.vx += (mdx / mdist) * push * 28 + mouseVx * push * 0.25;
+              p.vy += (mdy / mdist) * push * 18;
             }
 
             // Normal sway & wind drifting
