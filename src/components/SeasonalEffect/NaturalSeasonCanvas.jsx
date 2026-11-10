@@ -221,21 +221,28 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
 
     const sprites = createSeasonSprites(season);
 
-    // Target landing surfaces (Only the hero buttons, max 2 leaves each!)
+    // Multiple landing surfaces across buttons, texts, badges, and ledges
     const TARGET_SPECS = [
-      { selector: '.hero-cta .btn-solid', maxLanded: 2 },
-      { selector: '.hero-cta .btn-ghost', maxLanded: 2 }
+      { selector: '.hero-cta .btn-solid', maxLanded: 4, yOffset: -5, inset: 10 },
+      { selector: '.hero-cta .btn-ghost', maxLanded: 4, yOffset: -5, inset: 10 },
+      { selector: '.hero-meta div:nth-child(1)', maxLanded: 3, yOffset: -3, inset: 4 },
+      { selector: '.hero-meta div:nth-child(2)', maxLanded: 3, yOffset: -3, inset: 4 },
+      { selector: '.hero-meta div:nth-child(3)', maxLanded: 3, yOffset: -3, inset: 4 },
+      { selector: '.hero-title', maxLanded: 6, yOffset: -6, inset: 20 },
+      { selector: '.season-badge', maxLanded: 2, yOffset: -4, inset: 8 },
+      { selector: '.bgm-btn', maxLanded: 2, yOffset: -4, inset: 8 },
+      { selector: '.marquee', maxLanded: 8, yOffset: -4, inset: 15 }
     ];
 
     const targets = TARGET_SPECS.map((spec) => ({
-      selector: spec.selector,
-      el: document.querySelector(spec.selector),
-      max: spec.maxLanded,
+      ...spec,
+      el: null,
+      rect: null,
       count: 0
     }));
 
-    // Particle counts tuned for atmospheric immersion
-    const totalCount = season === 'winter' ? 55 : 36;
+    // Rich particle counts tuned for immersive atmospheric density
+    const totalCount = season === 'winter' ? 75 : (season === 'autumn' ? 68 : 55);
     const particles = [];
 
     const spawnParticle = (startY = -45) => {
@@ -251,7 +258,7 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         scale = 0.22 + Math.random() * 0.20;
         baseVy = 18 + Math.random() * 26;
       } else {
-        // Autumn: 18-28px on screen
+        // Autumn: 18-32px on screen
         scale = 0.26 + Math.random() * 0.16;
         baseVy = 38 + Math.random() * 42;
       }
@@ -272,10 +279,8 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         flipSpeed: 1.5 + Math.random() * 2.2,
         sprite: sprites[Math.floor(Math.random() * sprites.length)],
         state: 'falling', // 'falling' | 'landed'
-        targetEl: null,
         targetObj: null,
         offsetRatio: 0,
-        offsetY: 0,
         hasBeenKnocked: false,
         settleWobble: 0,
         baseAngle: 0
@@ -284,7 +289,7 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
 
     // Stagger initial particle spawn across screen so leaves are immediately drifting on load
     for (let i = 0; i < totalCount; i++) {
-      particles.push(spawnParticle(Math.random() * height * 1.2 - height * 0.2));
+      particles.push(spawnParticle(Math.random() * height * 1.15 - 50));
     }
 
     // Mouse tracking for sweep & air displacement
@@ -331,10 +336,15 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
       mouseVx *= 0.82;
       mouseVy *= 0.82;
 
-      // Ensure target elements remain connected
+      // Update and cache target elements bounding rects (once per frame)
       for (const t of targets) {
         if (!t.el || !t.el.isConnected) {
           t.el = document.querySelector(t.selector);
+        }
+        if (t.el) {
+          t.rect = t.el.getBoundingClientRect();
+        } else {
+          t.rect = null;
         }
       }
 
@@ -342,27 +352,25 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         const p = particles[i];
 
         if (p.state === 'falling') {
-          // Check organic landing on button top rims
+          // Check organic landing on button, text, or ledge top rims
           if (!p.hasBeenKnocked && p.vy > 0) {
             for (const t of targets) {
-              if (t.count >= t.max || !t.el) continue;
-              const rect = t.el.getBoundingClientRect();
+              if (t.count >= t.max || !t.rect) continue;
+              const rect = t.rect;
               if (rect.bottom < 0 || rect.top > height) continue;
 
-              const hitLeft = rect.left + 12;
-              const hitRight = rect.right - 12;
+              const hitLeft = rect.left + t.inset;
+              const hitRight = rect.right - t.inset;
               const topRim = rect.top;
               const prevY = p.y - p.vy * dt;
-              const crossesTop = prevY <= topRim + 12 && p.y >= topRim - 8;
+              const crossesTop = prevY <= topRim + 14 && p.y >= topRim - 8;
 
               if (p.x >= hitLeft && p.x <= hitRight && crossesTop) {
                 // Natural chance to catch and rest
-                if (Math.random() < 0.70) {
+                if (Math.random() < 0.72) {
                   p.state = 'landed';
-                  p.targetEl = t.el;
                   p.targetObj = t;
                   p.offsetRatio = (p.x - rect.left) / rect.width;
-                  p.offsetY = -5 - Math.random() * 4;
                   p.settleWobble = 1.0;
                   p.baseAngle = (Math.random() * 50 - 25) * (Math.PI / 180);
                   t.count++;
@@ -419,15 +427,16 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         }
 
         if (p.state === 'landed') {
-          if (!p.targetEl || !p.targetEl.isConnected) {
+          const t = p.targetObj;
+          if (!t || !t.el || !t.el.isConnected || !t.rect) {
             p.state = 'falling';
             continue;
           }
 
-          // Anchored to the button's live viewport position
-          const rect = p.targetEl.getBoundingClientRect();
+          // Anchored to the element's live viewport position
+          const rect = t.rect;
           p.x = rect.left + rect.width * p.offsetRatio;
-          p.y = rect.top + p.offsetY;
+          p.y = rect.top + t.yOffset;
 
           // Check mouse sweep / knock-off
           const dx = p.x - mouseX;
@@ -435,25 +444,22 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           const isMouseOverTarget =
-            mouseX >= rect.left - 8 &&
-            mouseX <= rect.right + 8 &&
-            mouseY >= rect.top - 15 &&
-            mouseY <= rect.bottom + 10;
+            mouseX >= rect.left - 10 &&
+            mouseX <= rect.right + 10 &&
+            mouseY >= rect.top - 18 &&
+            mouseY <= rect.bottom + 12;
 
-          // Sweep triggers when cursor passes near leaf or enters button
+          // Sweep triggers when cursor passes near leaf or enters target
           if (dist < 45 || isMouseOverTarget) {
             p.state = 'falling';
             p.hasBeenKnocked = true;
 
-            const dirX = Math.abs(mouseVx) > 2 ? Math.sign(mouseVx) : (dx < 0 ? 1 : -1);
-            p.vx = dirX * (45 + Math.random() * 45) + mouseVx * 0.4;
-            p.vy = -40 - Math.random() * 40 - Math.abs(mouseVy * 0.25); // Realistic upward bounce!
+            const dirX = Math.abs(mouseVx) > 1.5 ? Math.sign(mouseVx) : (dx < 0 ? 1 : -1);
+            p.vx = dirX * (45 + Math.random() * 50) + mouseVx * 0.45;
+            p.vy = -40 - Math.random() * 45 - Math.abs(mouseVy * 0.25); // Realistic upward bounce!
             p.spin = dirX * (2.5 + Math.random() * 3.5);
 
-            if (p.targetObj) {
-              p.targetObj.count = Math.max(0, p.targetObj.count - 1);
-            }
-            p.targetEl = null;
+            t.count = Math.max(0, t.count - 1);
             p.targetObj = null;
           } else {
             // Settle wobble upon fresh landing
