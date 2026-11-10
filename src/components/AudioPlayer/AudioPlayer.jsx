@@ -26,7 +26,7 @@ export const SEASON_TRACKS = {
   },
   summer: {
     id: 'summer',
-    title: "Finally Summer Playlist",
+    title: 'Finally Summer Playlist',
     tag: 'Summer Vibe',
     icon: '☀️',
     file: 'summer.m4a'
@@ -64,92 +64,97 @@ export default function AudioPlayer({ season = 'autumn' }) {
   const userManuallyPausedRef = useRef(false);
   const isPlayingRef = useRef(false);
   const hoverTimerRef = useRef(null);
+  const prevSrcRef = useRef(null);
+
   isPlayingRef.current = isPlaying;
 
-  // Fallback to autumn if season is 'off' or unknown
   const safeSeason = SEASON_TRACKS[season] ? season : 'autumn';
   const track = SEASON_TRACKS[safeSeason];
   const audioSrc = `${BASE}audio/${track.file}`;
 
-  // Helper: start playback with gentle volume fade-in
-  const playWithFadeIn = (targetVol = volume) => {
+  // Helper to reliably start playback
+  const startAudioPlayback = (targetVol = volume) => {
     const audio = audioRef.current;
-    if (!audio || userManuallyPausedRef.current) return;
+    if (!audio) return;
 
-    audio.volume = 0.05;
+    audio.volume = isMuted ? 0 : targetVol;
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
           setIsPlaying(true);
-          const target = isMuted ? 0 : targetVol;
-          let cur = 0.05;
-          const step = Math.max(0.02, (target - cur) / 12);
-          const timer = setInterval(() => {
-            cur += step;
-            if (cur >= target || !audioRef.current || audioRef.current.paused) {
-              if (audioRef.current && !isMuted) audioRef.current.volume = target;
-              clearInterval(timer);
-            } else {
-              audioRef.current.volume = Math.min(1, Math.max(0, cur));
-            }
-          }, 80);
         })
         .catch((err) => {
-          console.warn('Autoplay waiting for interaction:', err?.message || err);
+          console.warn('Playback pending user interaction:', err?.message || err);
         });
     }
   };
 
-  // 1. Auto-play on first user interaction (scroll, click, touch, keydown)
+  // 1. Auto-play on first real user interaction (click, touch, key, scroll)
   useEffect(() => {
-    let fired = false;
+    let active = true;
 
-    const handleFirstInteraction = () => {
-      if (fired || userManuallyPausedRef.current || isPlayingRef.current) return;
-      fired = true;
-      playWithFadeIn();
-      detachListeners();
+    const handleInteraction = () => {
+      if (!active || userManuallyPausedRef.current || isPlayingRef.current) return;
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      audio.volume = isMuted ? 0 : volume;
+      const promise = audio.play();
+      if (promise !== undefined) {
+        promise
+          .then(() => {
+            active = false;
+            setIsPlaying(true);
+            detachAll();
+          })
+          .catch(() => {
+            // Browser blocked (e.g. scroll without prior click)
+            // Keep listeners alive so the next click/tap plays!
+          });
+      }
     };
 
-    const detachListeners = () => {
-      window.removeEventListener('scroll', handleFirstInteraction);
-      window.removeEventListener('pointerdown', handleFirstInteraction);
-      window.removeEventListener('touchstart', handleFirstInteraction);
-      window.removeEventListener('keydown', handleFirstInteraction);
-      window.removeEventListener('wheel', handleFirstInteraction);
+    const detachAll = () => {
+      document.removeEventListener('click', handleInteraction, true);
+      document.removeEventListener('pointerdown', handleInteraction, true);
+      document.removeEventListener('touchstart', handleInteraction, true);
+      document.removeEventListener('keydown', handleInteraction, true);
+      window.removeEventListener('scroll', handleInteraction);
+      window.removeEventListener('wheel', handleInteraction);
     };
 
-    window.addEventListener('scroll', handleFirstInteraction, { passive: true });
-    window.addEventListener('pointerdown', handleFirstInteraction, { passive: true });
-    window.addEventListener('touchstart', handleFirstInteraction, { passive: true });
-    window.addEventListener('keydown', handleFirstInteraction, { passive: true });
-    window.addEventListener('wheel', handleFirstInteraction, { passive: true });
+    // Capture phase ensures we catch clicks even if elements stop propagation
+    document.addEventListener('click', handleInteraction, true);
+    document.addEventListener('pointerdown', handleInteraction, true);
+    document.addEventListener('touchstart', handleInteraction, true);
+    document.addEventListener('keydown', handleInteraction, true);
+    window.addEventListener('scroll', handleInteraction, { passive: true });
+    window.addEventListener('wheel', handleInteraction, { passive: true });
 
-    return detachListeners;
-  }, []);
+    return () => {
+      active = false;
+      detachAll();
+    };
+  }, [volume, isMuted]);
 
   // 2. When season changes, update audio src smoothly
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const wasPlaying = isPlayingRef.current;
-    audio.src = audioSrc;
-    audio.load();
+    // Only switch if src actually changed to prevent aborting initial load
+    if (prevSrcRef.current !== audioSrc) {
+      const wasPlaying = isPlayingRef.current;
+      prevSrcRef.current = audioSrc;
+      audio.src = audioSrc;
+      audio.load();
 
-    if (wasPlaying && !userManuallyPausedRef.current) {
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise
-          .then(() => setIsPlaying(true))
-          .catch((err) => {
-            console.warn('Playback error on season change:', err);
-            setIsPlaying(false);
-          });
+      if (wasPlaying && !userManuallyPausedRef.current) {
+        startAudioPlayback(volume);
       }
     }
-  }, [audioSrc]);
+  }, [audioSrc, volume]);
 
   // 3. Sync volume changes to audio element
   useEffect(() => {
@@ -190,7 +195,7 @@ export default function AudioPlayer({ season = 'autumn' }) {
       setIsPlaying(false);
     } else {
       userManuallyPausedRef.current = false;
-      playWithFadeIn(volume);
+      startAudioPlayback(volume);
     }
   };
 
@@ -238,7 +243,7 @@ export default function AudioPlayer({ season = 'autumn' }) {
         ref={audioRef}
         src={audioSrc}
         loop
-        preload="metadata"
+        preload="auto"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
