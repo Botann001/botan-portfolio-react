@@ -6,6 +6,7 @@ import Lanyard from './components/Lanyard/Lanyard';
 import InfiniteMenu from './components/InfiniteMenu/InfiniteMenu';
 import Cursor from './components/Cursor';
 import SeasonalEffect, { getCalendarSeason, SEASONS } from './components/SeasonalEffect/SeasonalEffect';
+import AudioPlayer from './components/AudioPlayer/AudioPlayer';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -192,6 +193,7 @@ export default function App() {
           <a href="#contact">Contact</a>
         </nav>
         <div className="nav-right">
+          <AudioPlayer season={activeSeasonKey} />
           <button
             type="button"
             className="season-badge"
