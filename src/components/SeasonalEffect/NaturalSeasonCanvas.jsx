@@ -221,17 +221,16 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
 
     const sprites = createSeasonSprites(season);
 
-    // Multiple landing surfaces across buttons, texts, badges, and ledges
+    // Landing surfaces on tactile buttons, stats, and ledges (avoiding empty text box boundaries)
     const TARGET_SPECS = [
-      { selector: '.hero-cta .btn-solid', maxLanded: 4, yOffset: -5, inset: 10 },
-      { selector: '.hero-cta .btn-ghost', maxLanded: 4, yOffset: -5, inset: 10 },
-      { selector: '.hero-meta div:nth-child(1)', maxLanded: 3, yOffset: -3, inset: 4 },
-      { selector: '.hero-meta div:nth-child(2)', maxLanded: 3, yOffset: -3, inset: 4 },
-      { selector: '.hero-meta div:nth-child(3)', maxLanded: 3, yOffset: -3, inset: 4 },
-      { selector: '.hero-title', maxLanded: 6, yOffset: -6, inset: 20 },
-      { selector: '.season-badge', maxLanded: 2, yOffset: -4, inset: 8 },
-      { selector: '.bgm-btn', maxLanded: 2, yOffset: -4, inset: 8 },
-      { selector: '.marquee', maxLanded: 8, yOffset: -4, inset: 15 }
+      { selector: '.hero-cta .btn-solid', maxLanded: 4, yOffset: -5, inset: 12 },
+      { selector: '.hero-cta .btn-ghost', maxLanded: 4, yOffset: -5, inset: 12 },
+      { selector: '.hero-meta div:nth-child(1)', maxLanded: 2, yOffset: -3, inset: 6 },
+      { selector: '.hero-meta div:nth-child(2)', maxLanded: 2, yOffset: -3, inset: 6 },
+      { selector: '.hero-meta div:nth-child(3)', maxLanded: 2, yOffset: -3, inset: 6 },
+      { selector: '.season-badge', maxLanded: 1, yOffset: -4, inset: 8 },
+      { selector: '.bgm-btn', maxLanded: 1, yOffset: -4, inset: 8 },
+      { selector: '.marquee', maxLanded: 6, yOffset: -4, inset: 20 }
     ];
 
     const targets = TARGET_SPECS.map((spec) => ({
@@ -241,8 +240,8 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
       count: 0
     }));
 
-    // Rich particle counts tuned for immersive atmospheric density
-    const totalCount = season === 'winter' ? 75 : (season === 'autumn' ? 68 : 55);
+    // Constant flow of falling particles in the sky that NEVER stops
+    const DESIRED_FALLING_COUNT = season === 'winter' ? 65 : (season === 'autumn' ? 55 : 45);
     const particles = [];
 
     const spawnParticle = (startY = -45) => {
@@ -258,8 +257,8 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         scale = 0.22 + Math.random() * 0.20;
         baseVy = 18 + Math.random() * 26;
       } else {
-        // Autumn: 18-32px on screen
-        scale = 0.26 + Math.random() * 0.16;
+        // Autumn: 18-30px on screen
+        scale = 0.26 + Math.random() * 0.15;
         baseVy = 38 + Math.random() * 42;
       }
 
@@ -287,8 +286,8 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
       };
     };
 
-    // Stagger initial particle spawn across screen so leaves are immediately drifting on load
-    for (let i = 0; i < totalCount; i++) {
+    // Stagger initial falling particles across screen
+    for (let i = 0; i < DESIRED_FALLING_COUNT; i++) {
       particles.push(spawnParticle(Math.random() * height * 1.15 - 50));
     }
 
@@ -348,6 +347,18 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
         }
       }
 
+      // Count currently falling particles to ensure continuous atmospheric rainfall
+      let activeFalling = 0;
+      for (let i = 0; i < particles.length; i++) {
+        if (particles[i].state === 'falling') activeFalling++;
+      }
+
+      // Replenish the sky whenever leaves land, so leaves NEVER stop falling
+      while (activeFalling < DESIRED_FALLING_COUNT && particles.length < DESIRED_FALLING_COUNT + 30) {
+        particles.push(spawnParticle(-45));
+        activeFalling++;
+      }
+
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
@@ -355,7 +366,8 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
           // Check organic landing on button, text, or ledge top rims
           if (!p.hasBeenKnocked && p.vy > 0) {
             for (const t of targets) {
-              if (t.count >= t.max || !t.rect) continue;
+              // STRICTLY respect t.maxLanded so surfaces never get overcrowded
+              if (t.count >= t.maxLanded || !t.rect) continue;
               const rect = t.rect;
               if (rect.bottom < 0 || rect.top > height) continue;
 
@@ -363,16 +375,26 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
               const hitRight = rect.right - t.inset;
               const topRim = rect.top;
               const prevY = p.y - p.vy * dt;
-              const crossesTop = prevY <= topRim + 14 && p.y >= topRim - 8;
+              const crossesTop = prevY <= topRim + 12 && p.y >= topRim - 8;
 
               if (p.x >= hitLeft && p.x <= hitRight && crossesTop) {
-                // Natural chance to catch and rest
-                if (Math.random() < 0.72) {
+                const candidateRatio = (p.x - rect.left) / rect.width;
+
+                // Ensure leaves don't stack directly on top of another resting leaf
+                const isSpotOccupied = particles.some(
+                  (other) =>
+                    other !== p &&
+                    other.state === 'landed' &&
+                    other.targetObj === t &&
+                    Math.abs((other.offsetRatio - candidateRatio) * rect.width) < 18
+                );
+
+                if (!isSpotOccupied && Math.random() < 0.75) {
                   p.state = 'landed';
                   p.targetObj = t;
-                  p.offsetRatio = (p.x - rect.left) / rect.width;
+                  p.offsetRatio = candidateRatio;
                   p.settleWobble = 1.0;
-                  p.baseAngle = (Math.random() * 50 - 25) * (Math.PI / 180);
+                  p.baseAngle = (Math.random() * 44 - 22) * (Math.PI / 180);
                   t.count++;
                   break;
                 }
@@ -411,8 +433,16 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
 
             // Recalculate once dropped off-screen
             if (p.y > height + 50 || p.x < -60 || p.x > width + 60) {
-              particles[i] = spawnParticle(-45);
-              continue;
+              if (activeFalling > DESIRED_FALLING_COUNT) {
+                // Trim excess knock particles
+                particles.splice(i, 1);
+                i--;
+                activeFalling--;
+                continue;
+              } else {
+                particles[i] = spawnParticle(-45);
+                continue;
+              }
             }
 
             // Render falling particle with 3D flip effect
@@ -430,6 +460,8 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
           const t = p.targetObj;
           if (!t || !t.el || !t.el.isConnected || !t.rect) {
             p.state = 'falling';
+            if (t) t.count = Math.max(0, t.count - 1);
+            p.targetObj = null;
             continue;
           }
 
@@ -444,19 +476,19 @@ export default function NaturalSeasonCanvas({ season = 'autumn' }) {
           const dist = Math.sqrt(dx * dx + dy * dy);
 
           const isMouseOverTarget =
-            mouseX >= rect.left - 10 &&
-            mouseX <= rect.right + 10 &&
-            mouseY >= rect.top - 18 &&
-            mouseY <= rect.bottom + 12;
+            mouseX >= rect.left - 8 &&
+            mouseX <= rect.right + 8 &&
+            mouseY >= rect.top - 16 &&
+            mouseY <= rect.bottom + 10;
 
           // Sweep triggers when cursor passes near leaf or enters target
-          if (dist < 45 || isMouseOverTarget) {
+          if (dist < 42 || isMouseOverTarget) {
             p.state = 'falling';
             p.hasBeenKnocked = true;
 
             const dirX = Math.abs(mouseVx) > 1.5 ? Math.sign(mouseVx) : (dx < 0 ? 1 : -1);
             p.vx = dirX * (45 + Math.random() * 50) + mouseVx * 0.45;
-            p.vy = -40 - Math.random() * 45 - Math.abs(mouseVy * 0.25); // Realistic upward bounce!
+            p.vy = -40 - Math.random() * 45 - Math.abs(mouseVy * 0.25); // Upward pop bounce
             p.spin = dirX * (2.5 + Math.random() * 3.5);
 
             t.count = Math.max(0, t.count - 1);
