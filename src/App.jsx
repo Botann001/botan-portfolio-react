@@ -5,6 +5,7 @@ import MagnetLines from './components/MagnetLines/MagnetLines';
 import Lanyard from './components/Lanyard/Lanyard';
 import InfiniteMenu from './components/InfiniteMenu/InfiniteMenu';
 import Cursor from './components/Cursor';
+import SeasonalEffect, { getCalendarSeason, SEASONS } from './components/SeasonalEffect/SeasonalEffect';
 
 const BASE = import.meta.env.BASE_URL;
 
@@ -154,7 +155,17 @@ function useWitaClock() {
 export default function App() {
   const [loading, setLoading] = useState(true);
   const [loaderGone, setLoaderGone] = useState(false);
+  const [seasonMode, setSeasonMode] = useState('auto');
   const clock = useWitaClock();
+
+  const activeSeasonKey = seasonMode === 'auto' ? getCalendarSeason() : seasonMode;
+  const activeSeason = SEASONS[activeSeasonKey] || SEASONS.autumn;
+
+  const cycleSeason = () => {
+    const order = ['auto', 'winter', 'spring', 'summer', 'autumn', 'off'];
+    const nextIdx = (order.indexOf(seasonMode) + 1) % order.length;
+    setSeasonMode(order[nextIdx]);
+  };
 
   useEffect(() => {
     const t1 = setTimeout(() => setLoading(false), 1750);
@@ -168,6 +179,7 @@ export default function App() {
   return (
     <>
       <Cursor />
+      <SeasonalEffect season={seasonMode} />
       {!loaderGone && <Loader done={!loading} />}
 
       <header className="nav">
@@ -179,7 +191,20 @@ export default function App() {
           <a href="#works">Works</a>
           <a href="#contact">Contact</a>
         </nav>
-        <div className="nav-clock">BJR, ID — {clock} WITA</div>
+        <div className="nav-right">
+          <button
+            type="button"
+            className="season-badge"
+            onClick={cycleSeason}
+            aria-label={`Ubah musim: ${activeSeason.name}`}
+            title={`Musim: ${activeSeason.name} (${seasonMode === 'auto' ? 'Otomatis Kalender' : 'Manual'}). Klik untuk ganti.`}
+          >
+            <span className="season-icon">{activeSeason.icon}</span>
+            <span className="season-label">{activeSeason.label}</span>
+            {seasonMode === 'auto' && <span className="season-tag">AUTO</span>}
+          </button>
+          <div className="nav-clock">BJR, ID — {clock} WITA</div>
+        </div>
       </header>
 
       <main id="top">

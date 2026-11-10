@@ -180,6 +180,64 @@ a {
   opacity: 0.75;
   font-variant-numeric: tabular-nums;
 }
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 2vw, 18px);
+}
+.season-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.season-badge:hover {
+  background: rgba(232, 193, 90, 0.16);
+  border-color: var(--gold);
+  color: var(--gold);
+  transform: translateY(-1px);
+}
+.season-badge:active {
+  transform: translateY(0);
+}
+.season-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+.season-label {
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+.season-tag {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(232, 193, 90, 0.25);
+  color: var(--gold);
+  letter-spacing: 0.08em;
+}
+@media (max-width: 600px) {
+  .season-label {
+    display: none;
+  }
+  .season-badge {
+    padding: 5px 8px;
+    gap: 4px;
+  }
+}
 @media (max-width: 720px) {
   .nav-links {
     display: none;
