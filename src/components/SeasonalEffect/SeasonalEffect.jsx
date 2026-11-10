@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Snowfall } from 'falling-snow/react';
 import { FallingLeaves } from 'falling-leaves/react';
+import RestingSeasonElements from './RestingSeasonElements';
 
 // 4 Musim Internasional (Subtropis / Non-Indonesia)
 // Winter: Des - Feb (11, 0, 1)
@@ -71,8 +72,10 @@ export default function SeasonalEffect({ season = 'auto' }) {
     return null;
   }
 
+  let backgroundParticles = null;
+
   if (activeSeasonKey === 'winter') {
-    return (
+    backgroundParticles = (
       <Snowfall
         fullScreen
         flake="mixed"
@@ -84,10 +87,8 @@ export default function SeasonalEffect({ season = 'auto' }) {
         zIndex={2}
       />
     );
-  }
-
-  if (activeSeasonKey === 'autumn') {
-    return (
+  } else if (activeSeasonKey === 'autumn') {
+    backgroundParticles = (
       <FallingLeaves
         fullScreen
         shapes={['maple', 'oak', 'ginkgo', 'birch']}
@@ -98,10 +99,8 @@ export default function SeasonalEffect({ season = 'auto' }) {
         zIndex={2}
       />
     );
-  }
-
-  if (activeSeasonKey === 'spring') {
-    return (
+  } else if (activeSeasonKey === 'spring') {
+    backgroundParticles = (
       <FallingLeaves
         fullScreen
         shapes={['oval']}
@@ -113,10 +112,8 @@ export default function SeasonalEffect({ season = 'auto' }) {
         zIndex={2}
       />
     );
-  }
-
-  if (activeSeasonKey === 'summer') {
-    return (
+  } else if (activeSeasonKey === 'summer') {
+    backgroundParticles = (
       <Snowfall
         fullScreen
         flake="soft"
@@ -132,6 +129,10 @@ export default function SeasonalEffect({ season = 'auto' }) {
     );
   }
 
-  return null;
+  return (
+    <>
+      {backgroundParticles}
+      <RestingSeasonElements season={activeSeasonKey} />
+    </>
+  );
 }
-
