@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
-import { Snowfall } from 'falling-snow/react';
-import { FallingLeaves } from 'falling-leaves/react';
-import RestingSeasonElements from './RestingSeasonElements';
+import NaturalSeasonCanvas from './NaturalSeasonCanvas';
 
 // 4 Musim Internasional (Subtropis / Non-Indonesia)
 // Winter: Des - Feb (11, 0, 1)
@@ -72,67 +70,5 @@ export default function SeasonalEffect({ season = 'auto' }) {
     return null;
   }
 
-  let backgroundParticles = null;
-
-  if (activeSeasonKey === 'winter') {
-    backgroundParticles = (
-      <Snowfall
-        fullScreen
-        flake="mixed"
-        count={110}
-        speed={0.85}
-        wind={0.25}
-        size={[3, 18]}
-        opacity={[0.3, 0.9]}
-        zIndex={2}
-      />
-    );
-  } else if (activeSeasonKey === 'autumn') {
-    backgroundParticles = (
-      <FallingLeaves
-        fullScreen
-        shapes={['maple', 'oak', 'ginkgo', 'birch']}
-        count={32}
-        speed={[0.6, 1.4]}
-        sway={[0.5, 1.5]}
-        size={[14, 28]}
-        zIndex={2}
-      />
-    );
-  } else if (activeSeasonKey === 'spring') {
-    backgroundParticles = (
-      <FallingLeaves
-        fullScreen
-        shapes={['oval']}
-        colors={['#ffb7c5', '#ff9bb2', '#ffe4e6', '#f472b6', '#fce7f3']}
-        count={35}
-        speed={[0.5, 1.2]}
-        sway={[0.8, 1.8]}
-        size={[10, 20]}
-        zIndex={2}
-      />
-    );
-  } else if (activeSeasonKey === 'summer') {
-    backgroundParticles = (
-      <Snowfall
-        fullScreen
-        flake="soft"
-        count={55}
-        colors={['#e8c15a', '#ffd700', '#f59e0b', '#fbbf24', '#fde047']}
-        size={[3, 14]}
-        speed={0.3}
-        sway={2.2}
-        spin={0.4}
-        opacity={[0.35, 0.85]}
-        zIndex={2}
-      />
-    );
-  }
-
-  return (
-    <>
-      {backgroundParticles}
-      <RestingSeasonElements season={activeSeasonKey} />
-    </>
-  );
+  return <NaturalSeasonCanvas season={activeSeasonKey} />;
 }
